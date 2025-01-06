@@ -1,0 +1,42 @@
+body{
+    background-color: rgb(6, 8, 7);
+   
+    height: 100vh;
+    width: 100vw;
+    
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    
+}
+h1{
+    color:white;
+    text-align: center;
+}
+h1:hover{
+   color: aqua;
+}
+
+.btn{
+    position: relative;
+    left: 45%;
+    right: 50%;
+    top: 150px;
+}
+#text{
+    position: relative;
+    left: 150px;
+    top: 80px;
+    border: 4px solid rgb(52, 230, 240);
+    background-image: url(2da261bd473d26cdd8182593bd4921fe.jpg);
+    background-repeat: no-repeat;
+
+   
+}
+#text:hover{
+    border: 5px solid rgba(44, 164, 239, 0.792);
+}
+
+
