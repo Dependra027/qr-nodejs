@@ -1,8 +1,13 @@
-const mongoose=require('mongoose')
+const mongoose = require('mongoose');
 
-const url=new mongoose.Schema({
-    urls:{type:String,required:[true,"Enter Url to Convert"],index:true}
-},{timestamps:true})
+const urlSchema = new mongoose.Schema(
+  {
+    urls: { type: String, required: [true, "Enter URL to convert"], index: true }
+  },
+  { timestamps: true }
+);
 
-url.index({"url":'text'});
-module.exports=mongoose.model('UrlModel',url);
+// Correct indexing
+urlSchema.index({ urls: 'text' });
+
+module.exports = mongoose.model('UrlModel', urlSchema);

@@ -1,71 +1,81 @@
-const express=require('express');
-const ejs=require('ejs');
-const path=require('path');
-const mongoose=require("mongoose");
+const express = require('express');
+const ejs = require('ejs');
+const path = require('path');
+const mongoose = require("mongoose");
 const fs = require('fs');
-const Url=require('./urlModel')
-const qrcode=require('qrcode');
-const app=express();
-const port=process.env.port || 3000; //This line dynamically assigns the port number for a Node.js application. It uses the PORT environment variable if set, otherwise defaults to 3000, enabling easy deployment across different environments without code modification.
+const Url = require('./urlModel');
+const qrcode = require('qrcode');
+const app = express();
+const port = process.env.PORT || 3000;
 
-
+// Middleware
 app.use(express.json());
-
-//this is used to grab info from the body
-app.use(express.urlencoded({extended: false}));
-
-
-const db=mongoose.connect("mongodb://localhost:27017/Qrcode")
-
-if(!db){
-    console.log("Error connecting database");
-}
-else{
-    console.log("Database connected");
-}
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
-app.set('view engine','ejs');
-app.set('views',path.join(__dirname,'view')) // to let application know that it have to find view in the created view folder
-app.get("/",(req,res)=>{
-    res.render("index"); //we are rendering a index ejs file
+
+// Database Connection
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/Qrcode", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}).then(() => {
+    console.log("Database connected");
+}).catch((err) => {
+    console.error("Error connecting to the database:", err);
 });
 
+// Ensure the images directory exists
+const imagesDir = path.join(__dirname, 'public', 'images');
+if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+}
 
-app.post('/scan',async (req,res)=>{
-    // converting user input into qrcode
-    const input_text=req.body.text; // as the name of textarea is text
-    const input_textStr=String(input_text);
+// Views Configuration
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'view'));
 
-    console.log(input_textStr);
-    
-    const url=await Url.create({
-        urls: input_textStr    });
-    //pass the text to qr code
+// Routes
+app.get("/", (req, res) => {
+    res.render("index"); // Render the index EJS file
+});
+
+app.post('/scan', async (req, res) => {
+    const input_text = String(req.body.text); // Convert input to string
+    console.log(input_text);
+
+    const url = await Url.create({ urls: input_text }); // Save URL in the database
+
     qrcode.toDataURL(input_text, (err, src) => {
-        const filePath = path.join(__dirname, 'public', 'images', 'qr_code.png');// we need to make directory
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Error generating QR Code');
+        }
+
+        const filePath = path.join(imagesDir, 'qr_code.png'); // Path to save QR code
         const base64Data = src.replace(/^data:image\/png;base64,/, "");
 
         fs.writeFile(filePath, base64Data, 'base64', (err) => {
             if (err) {
                 console.error(err);
-                return res.status(500).send('Internal Server Error');
+                return res.status(500).send('Error saving QR Code');
             }
 
-            res.render("scan", {
-                qr_code: src,
-            });
+            res.render("scan", { qr_code: src });
         });
     });
 });
-app.get('/download', (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'images', 'qr_code.png');
 
-    // now i am Sending  the QR code file for download
+app.get('/download', (req, res) => {
+    const filePath = path.join(imagesDir, 'qr_code.png');
+
     res.download(filePath, 'qr_code.png', (err) => {
         if (err) {
             console.error(err);
-            return res.status(500).send('Internal Server Error');
+            return res.status(500).send('Error downloading QR Code');
         }
     });
 });
-app.listen(port,console.log(`Listening on port ${port}`));
+
+// Start Server
+app.listen(port, () => {
+    console.log(`Listening on port ${port}`);
+});
